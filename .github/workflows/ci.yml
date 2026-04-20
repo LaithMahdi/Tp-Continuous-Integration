@@ -107,10 +107,8 @@ jobs:
           npm test -- --coverage
       
       # 7. Analyser la qualité avec SonarQube/SonarCloud
-      - name: Analyser la qualité du backend avec SonarQube/SonarCloud
-        run: |
-          cd backend
-          npm run sonar
+      - name: Analyser la qualité avec SonarCloud
+        run: npm sonar-scanner
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       
