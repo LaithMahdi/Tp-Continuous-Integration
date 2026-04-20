@@ -1,0 +1,120 @@
+name: CI React Node
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  # JOB FRONTEND
+  frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Récupérer le code
+      - name: Récupérer le code du dépôt
+        uses: actions/checkout@v4
+      
+      # 2. Installer Node.js
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      # 3. Mettre en cache les dépendances npm du frontend
+      - name: Mettre en cache les dépendances npm du frontend
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-frontend-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+      
+      # 4. Installer les dépendances
+      - name: Installer les dépendances du frontend
+        run: |
+          cd frontend
+          npm ci
+      
+      # 5. Lancer ESLint
+      - name: Lancer ESLint sur le frontend
+        run: |
+          cd frontend
+          npm run lint
+      
+      # 6. Exécuter les tests avec couverture
+      - name: Exécuter les tests frontend avec couverture
+        run: |
+          cd frontend
+          npm test -- --watchAll=false --coverage
+      
+      # 7. Construire l'application React
+      - name: Construire l'application React
+        run: |
+          cd frontend
+          npm run build
+      
+      # 8. Construire l'image Docker du frontend
+      - name: Construire l'image Docker du frontend
+        run: |
+          docker build -t frontend-app:latest ./frontend
+
+  # JOB BACKEND
+  backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Récupérer le code
+      - name: Récupérer le code du dépôt
+        uses: actions/checkout@v4
+      
+      # 2. Installer Node.js
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      # 3. Mettre en cache les dépendances npm du backend
+      - name: Mettre en cache les dépendances npm du backend
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-backend-${{ hashFiles('backend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-
+      
+      # 4. Installer les dépendances
+      - name: Installer les dépendances du backend
+        run: |
+          cd backend
+          npm ci
+      
+      # 5. Lancer ESLint
+      - name: Lancer ESLint sur le backend
+        run: |
+          cd backend
+          npm run lint
+      
+      # 6. Exécuter les tests avec couverture
+      - name: Exécuter les tests backend avec couverture
+        run: |
+          cd backend
+          npm test -- --coverage
+      
+      # 7. Analyser la qualité avec SonarQube/SonarCloud
+      - name: Analyser la qualité du backend avec SonarQube/SonarCloud
+        run: |
+          cd backend
+          npm run sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      
+      # 8. Construire l'image Docker du backend
+      - name: Construire l'image Docker du backend
+        run: |
+          docker build -t backend-app:latest ./backend
